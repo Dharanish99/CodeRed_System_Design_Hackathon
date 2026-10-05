@@ -1,0 +1,2 @@
+# System context
+Customer uses SALESTORM for shopping and tracking. Identity provider supplies identity assertions; payment provider processes tokenized payment intents; carrier handles delivery; communication provider sends email/SMS. Operations staff use audited support/reconciliation functions. The boundary includes sale orchestration, stock, orders and telemetry, not bank settlement or physical delivery. See system_context.mmd.

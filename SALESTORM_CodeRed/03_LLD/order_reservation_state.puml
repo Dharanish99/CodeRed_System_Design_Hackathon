@@ -1,0 +1,35 @@
+@startuml
+
+state "Business lifecycle (jury wording)" as B {
+  [*] --> AVAILABLE
+  AVAILABLE --> RESERVED : guarded reserve commits
+  RESERVED --> PAYMENT_PENDING : checkout begins before TTL
+  RESERVED --> RELEASED : expiry / cancel
+  PAYMENT_PENDING --> CONFIRMED : definitive payment success
+  CONFIRMED --> SOLD : durable Inventory accounting\nin same local processing flow
+  PAYMENT_PENDING --> RELEASED : definitive payment failure / cancellation
+  SOLD --> [*]
+  RELEASED --> [*]
+}
+
+state "Persisted Inventory reservation state" as R {
+  [*] --> PR_RESERVED : reservation row inserted
+  state "RESERVED" as PR_RESERVED
+  state "PAYMENT_PENDING" as PR_PENDING
+  state "SOLD" as PR_SOLD
+  state "RELEASED" as PR_RELEASED
+  PR_RESERVED --> PR_PENDING : checkout_id + outbox commit
+  PR_RESERVED --> PR_RELEASED : release_reason EXPIRED or CANCELLED
+  PR_PENDING --> PR_SOLD : guarded stock move + audit + outbox
+  PR_PENDING --> PR_RELEASED : release_reason PAYMENT_FAILED or CANCELLED
+  PR_SOLD --> [*]
+  PR_RELEASED --> [*]
+}
+
+note bottom of B
+AVAILABLE is an inventory quantity, not a Reservation row.
+CONFIRMED is the business confirmation established by a definitive payment success.
+SOLD is the authoritative durable stock/accounting state. The mapping has no external half-committed window.
+PAYMENT_FAILED and TIMEOUT are outcomes/reasons; an UNKNOWN timeout retains PAYMENT_PENDING and is reconciled.
+end note
+@enduml

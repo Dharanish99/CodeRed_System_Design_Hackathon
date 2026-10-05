@@ -1,0 +1,125 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+package Inventory {
+ class ReservationService {
+   +reserve(command): ReservationResult
+   +beginCheckout(id): CheckoutIntent
+   +applyPayment(event): void
+   +expire(id): void
+
+}
+ interface InventoryRepository {
+   +reserveIfAvailable(id, qty): bool
+   +lockReservation(id): Reservation
+   +releaseOnce(id): bool
+   +commitOnce(id, payment): bool
+
+}
+ class Reservation {
+   +status: ReservationStatus
+   +expiresAt: Instant
+   +checkoutId: UUID
+
+}
+ class ReservationStatePolicy {
+ +allows(from, to, reason): bool
+}
+ interface IdempotencyRepository {
+ +claimOrReplay(key, hash): Result
+}
+ ReservationService --> InventoryRepository
+ ReservationService --> IdempotencyRepository
+ ReservationService --> ReservationStatePolicy
+ InventoryRepository --> Reservation
+}
+package Payment {
+ class PaymentService {
+ +start(checkout, method): Payment
+ +applyOutcome(outcome): void
+}
+ interface PaymentGateway {
+   +createOrGet(key, amount): ProviderIntent
+   +lookup(intent): Outcome
+   +cancel(intent): Outcome
+   +refund(intent, key): Outcome
+
+}
+ class ProviderAdapter
+ class GatewayFactory {
+ +forProvider(name): PaymentGateway
+}
+ class GatewayCircuitBreaker
+ interface PaymentRepository {
+ +getOrCreate(reservation): Payment
+ +saveOutcome(outcome): void
+}
+ class ReconciliationWorker {
+ +reconcile(payment): void
+}
+ PaymentGateway <|.. ProviderAdapter
+ PaymentService --> PaymentGateway
+ PaymentService --> PaymentRepository
+ PaymentService --> GatewayCircuitBreaker
+ GatewayFactory --> PaymentGateway
+ ReconciliationWorker --> PaymentService
+}
+package Order {
+ class OrderService {
+ +confirm(committed): Order
+ +advance(event): void
+ +cancel(id): void
+}
+ interface OrderRepository {
+ +insertUniqueReservation(data): Order
+ +save(order): void
+}
+ class OrderStatePolicy {
+ +allows(from, to): bool
+}
+ class OrderConsumer {
+ +consume(event): void
+}
+ OrderConsumer --> OrderService
+ OrderService --> OrderRepository
+ OrderService --> OrderStatePolicy
+}
+interface UnitOfWork {
+ +runAtomic(work): Result
+}
+interface Outbox {
+ +append(event): void
+}
+interface Inbox {
+ +tryInsert(consumer, eventId): bool
+}
+ReservationService --> UnitOfWork
+ReservationService --> Outbox
+PaymentService --> UnitOfWork
+PaymentService --> Outbox
+OrderService --> UnitOfWork
+OrderService --> Outbox
+OrderConsumer --> Inbox
+class CheckoutFacade {
+ +checkout(reservation): CheckoutIntent
+}
+interface PricingStrategy {
+ +quote(cart): Quote
+}
+class SalePriceStrategy
+class CouponStrategy
+PricingStrategy <|.. SalePriceStrategy
+PricingStrategy <|.. CouponStrategy
+CheckoutFacade --> PricingStrategy
+CheckoutFacade --> ReservationService
+CheckoutFacade --> PaymentService
+interface ShippingGateway {
+ +createOrGet(orderKey): Shipment
+ +track(id): Status
+}
+class CarrierAdapter
+ShippingGateway <|.. CarrierAdapter
+class NotificationConsumer {
+ +consume(event): void
+}
+@enduml

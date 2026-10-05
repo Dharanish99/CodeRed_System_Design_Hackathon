@@ -1,0 +1,22 @@
+# Speaker notes
+
+## 1. SALESTORM (30s)
+Open with the brief: ten thousand people click Buy for one hundred units. The design has to distinguish a retry from a new purchase and a timeout from a failed charge. Our proposal puts stock decisions inside one authoritative transaction and recovers downstream work from durable facts. Source: brief pp1,4,5. Transition: define what we guarantee.
+
+## 2. Guarantees and design targets (30s)
+Safety guarantees rely on all stock writers using the guarded protocol and on fenced durable database leadership. Throughput and latency are targets, not measured results. Unknown payments retain their hold. We explicitly sacrifice availability during unsafe partitions. Source: brief pp7,10,13; requirements assumptions A01-A10. Transition: show the boundaries.
+
+## 3. Architecture and ownership (60s)
+The Gateway bounds expensive work. Catalogue and Cart serve shopping; Checkout coordinates a durable reservation and payment intent. Inventory alone writes stock. Payment owns provider calls and reconciliation. Its durable success event causes Inventory to commit sold stock. Only that commitment creates a confirmed order. Kafka decouples failures; local outboxes and inboxes make replay safe. Notification and shipment cannot block the sale. Source: HLD and ADRs001-008. Transition: zoom into the row that protects the last unit.
+
+## 4. 10,000 customers versus 100 units (60s)
+Admitted requests contend on one stock row. The first100 distinct valid transactions can reserve. After the hundredth commit, the guarded condition is false. A waiting writer rechecks it, so stock never goes negative. Duplicates return their stored response. All changes commit together. Expiry and checkout lock the same reservation: expiry can release RESERVED; checkout before expiry changes it to PAYMENT_PENDING. Never expire a payment in flight. The invariant is live held plus sold <=100, not cumulative historical reservations. Source: PostgreSQL transaction isolation documentation and inventory_concurrency.md. Transition: a charge can succeed even when the response is lost.
+
+## 5. Payment success, then Order failure (45s)
+The provider may charge successfully before a process crashes. We persist one intent first, use the same provider key, and look it up after uncertainty. We do not release stock on timeout. After success, the event survives an Order outage. Inventory marks sold and publishes committed purchase evidence. Order restarts, atomically inserts inbox plus its unique reservation order and outgoing event, then acknowledges. A crash after commit just causes a harmless replay. A temporary outage is not a refund trigger. Source: brief p11 and payment/order sequences. Transition: these rules have named interfaces in the LLD.
+
+## 6. LLD, SOLID and extension points (45s)
+Each service has one responsibility. Core code depends on narrow interfaces. New payment adapters must preserve the timeout and idempotency contract: returning failed for an unknown outcome violates substitution. Pricing strategies extend quote computation; carrier adapters normalize shipment operations. Repository abstractions expose guarded operations rather than unsafe generic CRUD. UnitOfWork keeps stock and outbox atomic. We accept more interface and event coordination in exchange for testable failure boundaries. Source: LLD, SOLID and pattern mapping. Transition: conclude with evidence and the limiting resource.
+
+## 7. Scale, evidence and the accepted trade-off (30s)
+With assumed95% browsing and99% cache hit,500k edge RPS becomes roughly29,750 origin RPS. If all demand is Buy, admission must throttle; adding pods cannot parallelize one hot stock row. Independent SKUs shard. The executed state model passed12 tests including duplicate keys, expiry races, unknown charges, redelivery and Order recovery. It is not a database load test or real failover. Our accepted trade-off is lower availability when authority or payment outcome is uncertain. Team members must ratify this AI-assisted proposal and defend it themselves. Source: simulation_results.json, capacity model and brief p9. Close with the invariant: held plus sold can never exceed allocated stock under the stated assumptions.

@@ -1,0 +1,294 @@
+// Generated from the same table catalog as schema.sql.
+// Cross-domain relationships below are logical only; SQL has no cross-domain FKs.
+Table identity.customer {
+  customer_id uuid [pk]
+  subject text [not null, unique]
+  email_ciphertext bytea [not null]
+  created_at timestamptz [not null]
+}
+Table catalog.category {
+  category_id uuid [pk]
+  name text [not null]
+}
+Table catalog.product {
+  product_id uuid [pk]
+  category_id uuid [not null, ref: > catalog.category.category_id]
+  name text [not null]
+  price_minor bigint [not null, note: "NOT NULL CHECK (price_minor >= 0)"]
+  currency char(3) [not null]
+  version bigint [not null]
+  updated_at timestamptz [not null]
+}
+Table catalog.sale {
+  sale_id uuid [pk]
+  name text [not null]
+  starts_at timestamptz [not null]
+  ends_at timestamptz [not null]
+  status text [not null, note: "NOT NULL CHECK (status IN ('SCHEDULED','ACTIVE','ENDED'))"]
+}
+Table catalog.deal {
+  deal_id uuid [pk]
+  sale_id uuid [not null, ref: > catalog.sale.sale_id]
+  product_id uuid [not null, ref: > catalog.product.product_id]
+  price_minor bigint [not null, note: "NOT NULL CHECK (price_minor >= 0)"]
+}
+Table catalog.coupon {
+  coupon_id uuid [pk]
+  sale_id uuid [not null, ref: > catalog.sale.sale_id]
+  code text [not null, unique]
+  percent_off integer [not null, note: "NOT NULL CHECK (percent_off BETWEEN 0 AND 100)"]
+  expires_at timestamptz [not null]
+}
+Table cart.cart {
+  cart_id uuid [pk]
+  customer_id uuid [not null, unique]
+  version bigint [not null]
+  updated_at timestamptz [not null]
+}
+Table cart.cart_item {
+  cart_item_id uuid [pk]
+  cart_id uuid [not null, ref: > cart.cart.cart_id]
+  product_id uuid [not null]
+  quantity integer [not null, note: "NOT NULL CHECK (quantity > 0)"]
+  indexes {
+    (cart_id,product_id) [unique]
+  }
+}
+Table inventory.inventory {
+  inventory_id uuid [pk]
+  sale_id uuid [not null]
+  product_id uuid [not null]
+  allocated_quantity integer [not null, note: "NOT NULL CHECK (allocated_quantity >= 0)"]
+  available_quantity integer [not null, note: "NOT NULL CHECK (available_quantity >= 0)"]
+  reserved_quantity integer [not null, note: "NOT NULL DEFAULT 0 CHECK (reserved_quantity >= 0)"]
+  sold_quantity integer [not null, note: "NOT NULL DEFAULT 0 CHECK (sold_quantity >= 0)"]
+  version bigint [not null]
+  updated_at timestamptz [not null]
+  indexes {
+    (sale_id, product_id) [unique]
+  }
+}
+Table inventory.inventory_reservation {
+  reservation_id uuid [pk]
+  inventory_id uuid [not null, ref: > inventory.inventory.inventory_id]
+  sale_id uuid [not null]
+  customer_id uuid [not null]
+  idempotency_key text [not null]
+  quantity integer [not null, note: "NOT NULL CHECK (quantity = 1)"]
+  status text [not null, note: "NOT NULL CHECK (status IN ('RESERVED','PAYMENT_PENDING','SOLD','RELEASED'))"]
+  release_reason text [note: "CHECK (release_reason IN ('EXPIRED','PAYMENT_FAILED','CANCELLED'))"]
+  expires_at timestamptz [not null]
+  quote jsonb [not null]
+  checkout_id uuid [unique]
+  checkout_token_hash text
+  payment_id uuid [unique]
+  version bigint [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  indexes {
+    (customer_id, idempotency_key) [unique]
+  }
+}
+Table inventory.request_dedup {
+  customer_id uuid [not null]
+  operation text [not null]
+  idempotency_key text [not null, note: "NOT NULL CHECK (length(idempotency_key) BETWEEN 8 AND 128)"]
+  request_hash text [not null]
+  response_code integer
+  response_body jsonb
+  created_at timestamptz [not null]
+  indexes {
+    (customer_id, operation, idempotency_key) [pk]
+  }
+}
+Table payment.payment {
+  payment_id uuid [pk]
+  reservation_id uuid [not null, unique]
+  checkout_id uuid [not null, unique]
+  customer_id uuid [not null]
+  provider text [not null]
+  provider_key text [not null, unique]
+  provider_ref text
+  request_hash text [not null]
+  amount_minor bigint [not null, note: "NOT NULL CHECK (amount_minor >= 0)"]
+  currency char(3) [not null]
+  status text [not null, note: "NOT NULL CHECK (status IN ('PENDING','UNKNOWN','SUCCEEDED','FAILED','REFUND_PENDING','REFUNDED'))"]
+  refund_key text [unique]
+  version bigint [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  indexes {
+    (provider, provider_ref) [unique]
+  }
+}
+Table orders.customer_order {
+  order_id uuid [pk]
+  reservation_id uuid [not null, unique]
+  customer_id uuid [not null]
+  payment_id uuid [not null, unique]
+  amount_minor bigint [not null, note: "NOT NULL CHECK (amount_minor >= 0)"]
+  currency char(3) [not null]
+  status text [not null, note: "NOT NULL CHECK (status IN ('CREATED','PAYMENT_PENDING','CONFIRMED','PROCESSING','SHIPPED','OUT_FOR_DELIVERY','DELIVERED','CANCELLED','REFUND_PENDING','REFUNDED'))"]
+  version bigint [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+Table orders.order_item {
+  order_item_id uuid [pk]
+  order_id uuid [not null, ref: > orders.customer_order.order_id]
+  product_id uuid [not null]
+  quantity integer [not null, note: "NOT NULL CHECK (quantity > 0)"]
+  unit_price_minor bigint [not null, note: "NOT NULL CHECK (unit_price_minor >= 0)"]
+  product_name text [not null]
+}
+Table fulfilment.shipment {
+  shipment_id uuid [pk]
+  order_id uuid [not null, unique]
+  carrier text [not null]
+  carrier_reference text
+  address_ciphertext bytea [not null]
+  status text [not null, note: "NOT NULL CHECK (status IN ('CREATED','PROCESSING','SHIPPED','OUT_FOR_DELIVERY','DELIVERED'))"]
+  version bigint [not null]
+  updated_at timestamptz [not null]
+}
+Table notification.notification {
+  notification_id uuid [pk]
+  event_id uuid [not null]
+  order_id uuid [not null]
+  channel text [not null]
+  status text [not null, note: "NOT NULL CHECK (status IN ('PENDING','SENT','FAILED'))"]
+  attempts integer [not null]
+  updated_at timestamptz [not null]
+  indexes {
+    (event_id,channel) [unique]
+  }
+}
+Table inventory.outbox {
+  event_id uuid [pk]
+  event_type text [not null]
+  aggregate_id uuid [not null]
+  aggregate_version bigint [not null]
+  payload jsonb [not null]
+  traceparent text
+  created_at timestamptz [not null]
+  published_at timestamptz
+}
+Table inventory.inbox {
+  consumer text [not null]
+  event_id uuid [not null]
+  processed_at timestamptz [not null]
+  indexes {
+    (consumer,event_id) [pk]
+  }
+}
+Table inventory.audit {
+  audit_id bigint [pk]
+  aggregate_id uuid [not null]
+  old_state text
+  new_state text [not null]
+  reason text [not null]
+  actor text [not null]
+  correlation_id uuid [not null]
+  created_at timestamptz [not null]
+}
+Table payment.outbox {
+  event_id uuid [pk]
+  event_type text [not null]
+  aggregate_id uuid [not null]
+  aggregate_version bigint [not null]
+  payload jsonb [not null]
+  traceparent text
+  created_at timestamptz [not null]
+  published_at timestamptz
+}
+Table payment.inbox {
+  consumer text [not null]
+  event_id uuid [not null]
+  processed_at timestamptz [not null]
+  indexes {
+    (consumer,event_id) [pk]
+  }
+}
+Table payment.audit {
+  audit_id bigint [pk]
+  aggregate_id uuid [not null]
+  old_state text
+  new_state text [not null]
+  reason text [not null]
+  actor text [not null]
+  correlation_id uuid [not null]
+  created_at timestamptz [not null]
+}
+Table orders.outbox {
+  event_id uuid [pk]
+  event_type text [not null]
+  aggregate_id uuid [not null]
+  aggregate_version bigint [not null]
+  payload jsonb [not null]
+  traceparent text
+  created_at timestamptz [not null]
+  published_at timestamptz
+}
+Table orders.inbox {
+  consumer text [not null]
+  event_id uuid [not null]
+  processed_at timestamptz [not null]
+  indexes {
+    (consumer,event_id) [pk]
+  }
+}
+Table orders.audit {
+  audit_id bigint [pk]
+  aggregate_id uuid [not null]
+  old_state text
+  new_state text [not null]
+  reason text [not null]
+  actor text [not null]
+  correlation_id uuid [not null]
+  created_at timestamptz [not null]
+}
+Table fulfilment.outbox {
+  event_id uuid [pk]
+  event_type text [not null]
+  aggregate_id uuid [not null]
+  aggregate_version bigint [not null]
+  payload jsonb [not null]
+  traceparent text
+  created_at timestamptz [not null]
+  published_at timestamptz
+}
+Table fulfilment.inbox {
+  consumer text [not null]
+  event_id uuid [not null]
+  processed_at timestamptz [not null]
+  indexes {
+    (consumer,event_id) [pk]
+  }
+}
+Table fulfilment.audit {
+  audit_id bigint [pk]
+  aggregate_id uuid [not null]
+  old_state text
+  new_state text [not null]
+  reason text [not null]
+  actor text [not null]
+  correlation_id uuid [not null]
+  created_at timestamptz [not null]
+}
+Table notification.inbox {
+  consumer text [not null]
+  event_id uuid [not null]
+  processed_at timestamptz [not null]
+  indexes {
+    (consumer,event_id) [pk]
+  }
+}
+// Logical cross-domain references (documentation only):
+Ref: cart.cart.customer_id > identity.customer.customer_id // owns_logical
+Ref: inventory.inventory.product_id > catalog.product.product_id // stock_logical
+Ref: inventory.inventory.sale_id > catalog.sale.sale_id // allocation_logical
+Ref: inventory.inventory_reservation.customer_id > identity.customer.customer_id // buyer_logical
+Ref: payment.payment.reservation_id > inventory.inventory_reservation.reservation_id // intent_logical
+Ref: orders.customer_order.reservation_id > inventory.inventory_reservation.reservation_id // order_logical
+Ref: fulfilment.shipment.order_id > orders.customer_order.order_id // shipment_logical
+Ref: notification.notification.order_id > orders.customer_order.order_id // notice_logical

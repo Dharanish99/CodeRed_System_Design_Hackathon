@@ -1,0 +1,1320 @@
+openapi: 3.1.0
+info:
+  title: SALESTORM Design Contract
+  version: 1.0.0
+  description: Design contract; no deployed API. Single-unit flash sale assumptions
+    apply.
+servers:
+- url: https://api.salestorm.example/v1
+security:
+- bearerAuth: []
+paths:
+  /products/{product_id}:
+    get:
+      operationId: get_products_product_id
+      summary: Read product; stock is advisory
+      parameters:
+      - name: product_id
+        in: path
+        required: true
+        schema: &id001
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Read product; stock is advisory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+  /cart:
+    get:
+      operationId: get_cart
+      summary: Read own cart
+      parameters: []
+      responses:
+        '200':
+          description: Read own cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+  /cart/items/{product_id}:
+    put:
+      operationId: put_cart_items_product_id
+      summary: Set own cart item quantity with cart version
+      parameters:
+      - name: product_id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Set own cart item quantity with cart version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                expected_version:
+                  type: integer
+                  minimum: 0
+              required:
+              - quantity
+              - expected_version
+  /quotes:
+    post:
+      operationId: post_quotes
+      summary: Create server-priced quote for one flash-sale unit
+      parameters: []
+      responses:
+        '200':
+          description: Create server-priced quote for one flash-sale unit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                sale_id: *id001
+                product_id: *id001
+                coupon_code:
+                  type: string
+              required:
+              - sale_id
+              - product_id
+  /reservations:
+    post:
+      operationId: post_reservations
+      summary: Reserve one unit after verifying quote
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+        description: Stable per logical action; same key with changed canonical body
+          returns409. Scoped to principal and operation.
+      responses:
+        '201':
+          description: Reserve one unit after verifying quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                inventory_id: *id001
+                quantity:
+                  type: integer
+                  const: 1
+                quote_token:
+                  type: string
+              required:
+              - inventory_id
+              - quantity
+              - quote_token
+  /reservations/{reservation_id}:
+    get:
+      operationId: get_reservations_reservation_id
+      summary: Read authoritative reservation owned by caller
+      parameters:
+      - name: reservation_id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Read authoritative reservation owned by caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+  /checkouts:
+    post:
+      operationId: post_checkouts
+      summary: Pin unexpired hold and persist checkout intent
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+        description: Stable per logical action; same key with changed canonical body
+          returns409. Scoped to principal and operation.
+      responses:
+        '201':
+          description: Pin unexpired hold and persist checkout intent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reservation_id: *id001
+              required:
+              - reservation_id
+  /checkouts/{checkout_id}:
+    get:
+      operationId: get_checkouts_checkout_id
+      summary: Read checkout during asynchronous order creation
+      parameters:
+      - name: checkout_id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Read checkout during asynchronous order creation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+  /payments:
+    post:
+      operationId: post_payments
+      summary: Create or retrieve one payment intent for checkout
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+        description: Stable per logical action; same key with changed canonical body
+          returns409. Scoped to principal and operation.
+      responses:
+        '202':
+          description: Create or retrieve one payment intent for checkout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                checkout_id: *id001
+                payment_method_token:
+                  type: string
+                  writeOnly: true
+              required:
+              - checkout_id
+              - payment_method_token
+  /payments/{payment_id}:
+    get:
+      operationId: get_payments_payment_id
+      summary: Read payment outcome; UNKNOWN is not failed
+      parameters:
+      - name: payment_id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Read payment outcome; UNKNOWN is not failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+  /orders/{order_id}:
+    get:
+      operationId: get_orders_order_id
+      summary: Read own order and tracking state
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Read own order and tracking state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+  /orders/by-reservation/{reservation_id}:
+    get:
+      operationId: get_orders_by_reservation_reservation_id
+      summary: Read eventual order;404 until created, use checkout status
+      parameters:
+      - name: reservation_id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Read eventual order;404 until created, use checkout status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+  /orders/{order_id}/cancellation:
+    post:
+      operationId: post_orders_order_id_cancellation
+      summary: Request cancellation; reject after shipment; refund is asynchronous
+      parameters:
+      - name: order_id
+        in: path
+        required: true
+        schema: *id001
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+        description: Stable per logical action; same key with changed canonical body
+          returns409. Scoped to principal and operation.
+      responses:
+        '202':
+          description: Request cancellation; reject after shipment; refund is asynchronous
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+              required:
+              - reason
+  /payment-webhooks/{provider_id}:
+    post:
+      operationId: post_payment_webhooks_provider_id
+      summary: Accept signed provider event; ACK after durable receipt
+      parameters:
+      - name: provider_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Accept signed provider event; ACK after durable receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflict, expired, sold out or key mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Admission limit; obey Retry-After
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+        '503':
+          description: Dependency unavailable; outcome may be unknown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+              description: Suggested seconds before retry with same key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                provider_event_id:
+                  type: string
+                provider_ref:
+                  type: string
+                outcome:
+                  type: string
+                  enum:
+                  - SUCCEEDED
+                  - FAILED
+                  - PENDING
+              required:
+              - provider_event_id
+              - provider_ref
+              - outcome
+      security:
+      - providerSignature: []
+      description: Normalize provider-native payload through adapter after raw-body
+        signature validation. This abstract shape is not a vendor webhook specification.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    providerSignature:
+      type: apiKey
+      in: header
+      name: Provider-Signature
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlation_id: *id001
+      required:
+      - code
+      - message
+      - correlation_id
+    Product:
+      type: object
+      additionalProperties: false
+      properties:
+        product_id: *id001
+        name:
+          type: string
+        price_minor: &id002
+          type: integer
+          format: int64
+          minimum: 0
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        stock_hint:
+          type: string
+          enum:
+          - AVAILABLE
+          - SOLD_OUT
+          - UNKNOWN
+      required:
+      - product_id
+      - name
+      - price_minor
+      - currency
+      - stock_hint
+    Cart:
+      type: object
+      additionalProperties: false
+      properties:
+        cart_id: *id001
+        version:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              product_id: *id001
+              quantity:
+                type: integer
+                minimum: 1
+            required:
+            - product_id
+            - quantity
+      required:
+      - cart_id
+      - version
+      - items
+    Quote:
+      type: object
+      additionalProperties: false
+      properties:
+        quote_token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        amount_minor: *id002
+        currency:
+          type: string
+      required:
+      - quote_token
+      - expires_at
+      - amount_minor
+      - currency
+    Reservation:
+      type: object
+      additionalProperties: false
+      properties:
+        reservation_id: *id001
+        state:
+          type: string
+          enum:
+          - RESERVED
+          - PAYMENT_PENDING
+          - SOLD
+          - RELEASED
+        expires_at:
+          type: string
+          format: date-time
+        quantity:
+          type: integer
+          const: 1
+      required:
+      - reservation_id
+      - state
+      - expires_at
+      - quantity
+    Checkout:
+      type: object
+      additionalProperties: false
+      properties:
+        checkout_id: *id001
+        reservation_id: *id001
+        state:
+          type: string
+          enum:
+          - PAYMENT_PENDING
+          - SOLD
+          - RELEASED
+        payment_status_url:
+          type: string
+      required:
+      - checkout_id
+      - reservation_id
+      - state
+      - payment_status_url
+    Payment:
+      type: object
+      additionalProperties: false
+      properties:
+        payment_id: *id001
+        reservation_id: *id001
+        status:
+          type: string
+          enum:
+          - PENDING
+          - UNKNOWN
+          - SUCCEEDED
+          - FAILED
+          - REFUND_PENDING
+          - REFUNDED
+      required:
+      - payment_id
+      - reservation_id
+      - status
+    Order:
+      type: object
+      additionalProperties: false
+      properties:
+        order_id: *id001
+        reservation_id: *id001
+        status:
+          type: string
+          enum:
+          - CREATED
+          - PAYMENT_PENDING
+          - CONFIRMED
+          - PROCESSING
+          - SHIPPED
+          - OUT_FOR_DELIVERY
+          - DELIVERED
+          - CANCELLED
+          - REFUND_PENDING
+          - REFUNDED
+        amount_minor: *id002
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              product_id: *id001
+              quantity:
+                type: integer
+              unit_price_minor: *id002
+            required:
+            - product_id
+            - quantity
+            - unit_price_minor
+      required:
+      - order_id
+      - reservation_id
+      - status
+      - amount_minor
+      - currency
+      - items

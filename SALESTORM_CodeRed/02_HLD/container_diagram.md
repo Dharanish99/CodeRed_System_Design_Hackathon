@@ -1,0 +1,2 @@
+# Container view
+Logical containers are Gateway, Catalogue/Sale, Cart, Checkout, Inventory, Payment, Order, Fulfilment and Notification with owner-local PostgreSQL stores, shared Redis cache and Kafka infrastructure. Independent business ownership does not require nine separate clusters. See container_diagram.mmd and service_catalog.md for scaling/failure contracts. Only Inventory writes inventory tables. Only Payment can contact the charge endpoint.

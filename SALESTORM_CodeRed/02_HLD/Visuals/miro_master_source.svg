@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<g id="f0" transform="translate(0,0)" data-frame="01 Problem"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">01 Problem</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">100 units, 10,000 simultaneous buyers. Correctness must survive retries and service failures.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="10,000 concurrent logical buyers" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="100-unit fixed allocation" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="95% payments succeed; 5% fail" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="2% duplicate attempts; Order down30s" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f1" transform="translate(2240,0)" data-frame="02 Requirements"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">02 Requirements</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Strict: no oversell or duplicate charge. Targets: latency, availability and 500k edge demand.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Functional: discovery through delivery" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Safety: available + held + sold = allocation" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Targets and assumptions explicitly labelled" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="AI-assisted proposal; human team review required" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f2" transform="translate(0,1440)" data-frame="03 Architecture Alternatives"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">03 Architecture Alternatives</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Compare SQL, optimistic CAS, row locks, Redis Lua, queue writer, hybrid. Select admission + SQL + outbox.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Conditional SQL: short durable critical section" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Optimistic CAS: hot-key retry amplification" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Redis authority: failover durability burden" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Queue every Buy: delayed ownership and status UX" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="860" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Hybrid selected; single hot-row limit accepted" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f3" transform="translate(2240,1440)" data-frame="04 System Context"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">04 System Context</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Customers, operations and external providers; SALESTORM owns purchase correctness.</textArea>
+<foreignObject id="d3" x="160" y="200" width="1600" height="900" data-type="diagram" data-title="04 System Context">flowchart LR
+ C[Customer web or mobile] --&gt;|HTTPS shopping and tracking| S[SALESTORM]
+ O[Operations team] --&gt;|Audited support| S
+ S --&gt;|OIDC verification| I[Identity provider]
+ S --&gt;|Tokenized payment intent| P[Payment provider]
+ S --&gt;|Shipment request| D[Carrier]
+ S --&gt;|Email or SMS| N[Communication provider]
+ P -.-&gt;|Signed outcome webhook| S
+ D -.-&gt;|Tracking callback| S
+</foreignObject>
+</g>
+<g id="f4" transform="translate(0,2880)" data-frame="05 HLD"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">05 HLD</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">One authority per business fact. Solid sync calls; dashed durable events.</textArea>
+<foreignObject id="d4" x="160" y="200" width="1600" height="900" data-type="diagram" data-title="05 HLD">flowchart TB
+ U[Customer] --&gt;|HTTPS| E[CDN and WAF]
+ E --&gt;|Origin HTTPS| L[Load balancer]
+ L --&gt; G[API Gateway - auth and bounded admission]
+ G --&gt;|Sync browse and quote| C[Catalogue and Sale]
+ G --&gt;|Sync| A[Cart]
+ G --&gt;|Sync purchase| X[Checkout facade]
+ G --&gt;|Sync status| O[Order]
+ C &lt;--&gt; R[(Redis advisory cache)]
+ C --&gt; CD[(Catalogue DB)]
+ A --&gt; AD[(Cart DB)]
+ X --&gt;|Sync reserve and begin-checkout| I[Inventory and Reservation]
+ X --&gt;|Sync start same intent| P[Payment]
+ subgraph stock [Inventory consistency boundary]
+ I --&gt; ID[(Inventory DB - holds, dedup, inbox, outbox)]
+ end
+ subgraph pay [Payment idempotency boundary]
+ P --&gt; PD[(Payment DB - intent and outbox)]
+ P --&gt;|HTTPS create or lookup| PG[External payment provider]
+ end
+ ID -.-&gt;|Relay CheckoutStarted / ReservationCommitted| K[(Kafka + retry + DLQ)]
+ PD -.-&gt;|Relay PaymentSucceeded or Failed| K
+ K -.-&gt;|CheckoutStarted| P
+ K -.-&gt;|Payment outcome| I
+ subgraph recovery [Order recovery boundary]
+ K -.-&gt;|ReservationCommitted| O
+ O --&gt; OD[(Order DB - inbox, order, outbox)]
+ end
+ OD -.-&gt;|Relay OrderConfirmed| K
+ K -.-&gt; F[Fulfilment and Shipment]
+ K -.-&gt; N[Notification]
+ F --&gt; FD[(Shipment DB)]
+ N --&gt; ND[(Notification DB)]
+ F --&gt;|HTTPS| SH[External carrier]
+ N --&gt;|HTTPS| NP[External email and SMS]
+ F -.-&gt;|ShipmentUpdated via outbox| K
+ G -.-&gt;|Telemetry| T[Metrics logs traces]
+ I -.-&gt;|Telemetry| T
+ P -.-&gt;|Telemetry| T
+ O -.-&gt;|Telemetry| T
+</foreignObject>
+</g>
+<g id="f5" transform="translate(2240,2880)" data-frame="06 Inventory Concurrency"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">06 Inventory Concurrency</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Held + sold &lt;=100; request dedup, guarded UPDATE and atomic COMMIT.</textArea>
+<foreignObject id="d5" x="160" y="200" width="1600" height="900" data-type="diagram" data-title="06 Inventory Concurrency">flowchart LR
+ A[10000 distinct Buy actions] --&gt;|Authenticated / rate limited| B[Bounded admission]
+ B --&gt;|Same stable key| C[Claim request key]
+ C --&gt;|Existing key and same hash| D[Replay stored response]
+ C --&gt;|New key| E[SQL UPDATE where available &gt;= 1]
+ E --&gt;|One row changed| F[Hold + outbox + response COMMIT]
+ E --&gt;|Zero changed| G[OUT_OF_STOCK]
+ F --&gt; H[At most100 live holds before releases]
+ H --&gt; I[Payment success: held -&gt; sold]
+ H --&gt; J[Terminal failure: held -&gt; available]
+</foreignObject>
+</g>
+<g id="f6" transform="translate(0,4320)" data-frame="07 Payment and Order"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">07 Payment and Order</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Do not release an UNKNOWN payment hold. Order requires sold evidence.</textArea>
+<foreignObject id="d6" x="160" y="200" width="1600" height="900" data-type="diagram" data-title="07 Payment and Order">flowchart LR
+ A[Provider charge succeeded] --&gt; B[Payment DB: success + outbox]
+ B -.-&gt;|Relay; retries may duplicate| C[Kafka PaymentSucceeded]
+ C -.-&gt; D[Inventory inbox + SOLD + outbox]
+ D -.-&gt; E[Kafka ReservationCommitted]
+ E -.-&gt; F[Order unavailable30 seconds]
+ F --&gt;|Restart and replay| G[Inbox + unique order + OrderConfirmed]
+ G --&gt; H[Customer sees confirmed]
+ A --&gt;|Local response lost| R[Reconciler looks up SAME provider intent]
+ R --&gt; B
+</foreignObject>
+</g>
+<g id="f7" transform="translate(2240,4320)" data-frame="08 Failure Recovery"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">08 Failure Recovery</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Keep the durable fact; bounded retry, lookup, quarantine and replay.</textArea>
+<foreignObject id="d7" x="160" y="200" width="1600" height="900" data-type="diagram" data-title="08 Failure Recovery">flowchart TB
+ A[Failure detected] --&gt; B{Where?}
+ B --&gt;|Inventory DB| C[Fail closed; same-key retry after fenced recovery]
+ B --&gt;|Gateway timeout| D[UNKNOWN payment; retain stock; lookup intent]
+ B --&gt;|Broker unavailable| E[Retain local outbox; throttle backlog]
+ B --&gt;|Order unavailable| F[Retain committed event; replay]
+ B --&gt;|Poison event| G[DLQ + alert + repair + same-ID replay]
+ D --&gt; H{Definitive outcome?}
+ H --&gt;|Success| I[SOLD then order]
+ H --&gt;|Non-chargeable failure| J[Release hold once]
+ H --&gt;|Unknown| K[Keep hold; escalate15m]
+</foreignObject>
+</g>
+<g id="f8" transform="translate(0,5760)" data-frame="09 Deployment"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">09 Deployment</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Three AZs; fenced PostgreSQL primary; synchronous standby; private data network.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Stateless replicas spread over AZ A / B / C" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Owner-local PostgreSQL, inbox and outbox" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Kafka replicated logs, retry and DLQ" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Redis advisory only; fail closed on authority loss" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f9" transform="translate(2240,5760)" data-frame="10 Scalability"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">10 Scalability</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">500k edge RPS is not 500k hot-row writes. Principal limit: hot SKU row and WAL commit.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Assumed95% cacheable browse,99% hit" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="500k edge -&gt;29,750 origin RPS example" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="All-write sensitivity: throttle to measured capacity" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Shard independent SKUs; benchmark hot-row ceiling" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f10" transform="translate(0,7200)" data-frame="11 Security and Observability"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">11 Security and Observability</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Owner checks, tokenized payment, signed callbacks, trace IDs and invariant alerts.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="AuthN and resource ownership on every call" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="No PAN/CVV in application or logs" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Traceparent propagated through event envelopes" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Page on stock mismatch, old UNKNOWN or paid-without-order" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f11" transform="translate(2240,7200)" data-frame="12 ADRs"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">12 ADRs</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Eight decisions: concurrency, datastore, cache, messaging, payment, consistency, order recovery, idempotency.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="ADR001-002: SQL guard and fenced authority" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="ADR003-004: advisory cache; outbox/inbox messaging" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="ADR005-006: pinned UNKNOWN; local ACID + eventual views" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="ADR007-008: sold evidence before order; durable identity" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f12" transform="translate(0,8640)" data-frame="13 Jury Defense"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">13 Jury Defense</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Explain last unit, unknown charge, expired hold, lost ACK, split-brain and hot-product bottleneck.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Where exactly does the loser learn stock is zero?" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Why cannot expiry release a charge in flight?" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="How does replay avoid a second order?" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Which assumption would invalidate the proof?" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+<g id="f13" transform="translate(2240,8640)" data-frame="14 Final Architecture Story"><rect data-type="frame" x="0" y="0" width="1920" height="1120" fill="#ffffff"/>
+<text x="64" y="85" font-size="48" font-family="noto_sans" font-weight="bold" fill="#1a1a1a">14 Final Architecture Story</text><textArea x="64" y="125" width="1760" height="70" font-size="26" fill="#595959">Reserve once -&gt; pay once -&gt; commit stock -&gt; recover one order -&gt; fulfil and track.</textArea>
+<rect x="64" y="240" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="One source of truth per business fact" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="395" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Recover state without repeating business effects" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="550" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="State-model evidence does not prove production scale" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+<rect x="64" y="705" width="1760" height="115" fill="#f0f5fd" stroke="#659df2" stroke-width="2" data-content="Ratify assumptions and rehearse as a team" data-font-family="noto_sans" data-font-size="33" data-text-color="#1a1a1a"/>
+</g>
+</svg>

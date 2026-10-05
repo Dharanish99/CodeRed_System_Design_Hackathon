@@ -1,0 +1,49 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "Inventory" {
+  class ReservationService
+  interface InventoryRepository
+  class Reservation
+  interface IdempotencyRepository
+  interface UnitOfWork
+  interface Outbox
+  class ReservationStatePolicy
+  ReservationService --> InventoryRepository : guarded reserve / commit
+  ReservationService --> IdempotencyRepository : replay protection
+  ReservationService --> ReservationStatePolicy : legal transitions
+  ReservationService --> UnitOfWork : local atomic commit
+  ReservationService --> Outbox : domain events
+  InventoryRepository --> Reservation
+}
+package "Payment" {
+  class PaymentService
+  interface PaymentRepository
+  interface PaymentGateway
+  class ReconciliationWorker
+  PaymentService --> PaymentRepository : one intent per reservation
+  PaymentService --> PaymentGateway : stable provider key
+  ReconciliationWorker --> PaymentService : resolve UNKNOWN
+}
+package "Order" {
+  class OrderConsumer
+  class OrderService
+  interface OrderRepository
+  interface Inbox
+  class OrderStatePolicy
+  OrderConsumer --> Inbox : event dedup
+  OrderConsumer --> OrderService : ReservationCommitted
+  OrderService --> OrderRepository : unique reservation order
+  OrderService --> OrderStatePolicy : legal transitions
+}
+ReservationService ..> PaymentService : CheckoutStarted
+PaymentService ..> ReservationService : PaymentSucceeded / PaymentFailed
+ReservationService ..> OrderConsumer : ReservationCommitted after SOLD
+note bottom of InventoryRepository
+Current design keeps inventory and reservation persistence
+behind InventoryRepository; no separate ReservationRepository
+is claimed.
+end note
+@enduml

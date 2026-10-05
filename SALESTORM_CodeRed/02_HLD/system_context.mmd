@@ -1,0 +1,9 @@
+flowchart LR
+ C[Customer web or mobile] -->|HTTPS shopping and tracking| S[SALESTORM]
+ O[Operations team] -->|Audited support| S
+ S -->|OIDC verification| I[Identity provider]
+ S -->|Tokenized payment intent| P[Payment provider]
+ S -->|Shipment request| D[Carrier]
+ S -->|Email or SMS| N[Communication provider]
+ P -.->|Signed outcome webhook| S
+ D -.->|Tracking callback| S

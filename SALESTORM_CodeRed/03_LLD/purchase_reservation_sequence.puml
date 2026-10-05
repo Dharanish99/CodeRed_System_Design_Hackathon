@@ -1,0 +1,30 @@
+@startuml
+actor Customer as C
+participant "Gateway" as G
+participant "Catalogue/Sale" as Q
+participant "Inventory" as I
+database "Inventory PostgreSQL" as D
+C -> G : POST /quotes
+G -> Q : Validate sale and price
+Q --> C : Signed quote (via Gateway)
+C -> G : POST /reservations + Idempotency-Key
+alt over admission budget
+ G --> C : 429 + Retry-After
+else admitted
+ G -> I : Authenticated customer + hash + quote
+ I -> D : BEGIN; claim unique request key
+ alt duplicate same hash
+  D --> I : Original response
+ else new key
+  I -> D : UPDATE stock WHERE available>=1
+  alt changed 1 row
+   I -> D : Insert RESERVED + audit + outbox + response
+  else changed 0 rows
+   I -> D : Store OUT_OF_STOCK response
+  end
+ end
+ I -> D : COMMIT
+ I --> C : 201 hold or409 sold out (via Gateway)
+end
+note over I,D : Only COMMIT permits a successful HTTP response.
+@enduml

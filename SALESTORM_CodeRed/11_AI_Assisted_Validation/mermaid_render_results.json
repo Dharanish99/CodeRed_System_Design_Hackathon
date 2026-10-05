@@ -1,0 +1,30 @@
+[
+  {
+    "file": "02_HLD\\container_diagram.mmd",
+    "rendered": true
+  },
+  {
+    "file": "02_HLD\\failure_recovery.mmd",
+    "rendered": true
+  },
+  {
+    "file": "02_HLD\\hld_architecture.mmd",
+    "rendered": true
+  },
+  {
+    "file": "02_HLD\\inventory_concurrency.mmd",
+    "rendered": true
+  },
+  {
+    "file": "02_HLD\\payment_order_recovery.mmd",
+    "rendered": true
+  },
+  {
+    "file": "02_HLD\\system_context.mmd",
+    "rendered": true
+  },
+  {
+    "file": "04_Database\\erd.mmd",
+    "rendered": true
+  }
+]

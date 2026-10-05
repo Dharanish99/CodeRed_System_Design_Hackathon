@@ -1,0 +1,27 @@
+flowchart LR
+ B[Browser / mobile] --> E[CDN-WAF-LB-Gateway]
+ E --> C[Catalogue-Sale API]
+ E --> A[Cart API]
+ E --> X[Checkout API]
+ E --> O[Order API-worker]
+ X --> I[Inventory API-worker]
+ X --> P[Payment API-worker]
+ C --> D1[(Catalogue PostgreSQL)]
+ C --> R[(Redis cache)]
+ A --> D2[(Cart PostgreSQL)]
+ I --> D3[(Inventory PostgreSQL)]
+ P --> D4[(Payment PostgreSQL)]
+ O --> D5[(Order PostgreSQL)]
+ D3 -.-> K[Outbox relay and Kafka]
+ D4 -.-> K
+ D5 -.-> K
+ K -.-> I
+ K -.-> P
+ K -.-> O
+ K -.-> F[Fulfilment worker]
+ K -.-> N[Notification worker]
+ F --> D6[(Shipment PostgreSQL)]
+ N --> D7[(Notification PostgreSQL)]
+ P --> PG[Payment gateway external]
+ F --> CA[Carrier external]
+ N --> CP[Communication external]

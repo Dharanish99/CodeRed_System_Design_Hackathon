@@ -1,0 +1,93 @@
+[
+  {
+    "title": "SALESTORM",
+    "seconds": 30,
+    "brief_seconds": 30,
+    "subtitle": "10,000 buyers. 100 units. One correct outcome per purchase.",
+    "kind": "cover",
+    "lines": [
+      "Reserve without overselling",
+      "Pay without duplicate charges",
+      "Recover without losing orders"
+    ],
+    "notes": "Open with the brief: ten thousand people click Buy for one hundred units. The design has to distinguish a retry from a new purchase and a timeout from a failed charge. Our proposal puts stock decisions inside one authoritative transaction and recovers downstream work from durable facts. Source: brief pp1,4,5. Transition: define what we guarantee."
+  },
+  {
+    "title": "Guarantees and design targets",
+    "seconds": 30,
+    "brief_seconds": 30,
+    "kind": "requirements",
+    "lines": [
+      "Guarantee: available + held + sold = allocated",
+      "Guarantee: one logical action, one business effect",
+      "Target: 10k normal / 500k peak edge requests per second",
+      "Assumptions: one unit per Buy; one active region; provider intent lookup"
+    ],
+    "notes": "Safety guarantees rely on all stock writers using the guarded protocol and on fenced durable database leadership. Throughput and latency are targets, not measured results. Unknown payments retain their hold. We explicitly sacrifice availability during unsafe partitions. Source: brief pp7,10,13; requirements assumptions A01-A10. Transition: show the boundaries."
+  },
+  {
+    "title": "Architecture and ownership",
+    "seconds": 60,
+    "brief_seconds": 60,
+    "kind": "architecture",
+    "lines": [
+      "Edge: CDN, WAF, load balancing, authenticated admission",
+      "Sync: Catalogue / Cart -> Checkout -> Inventory + Payment",
+      "Async: Payment success -> stock SOLD -> Order -> Fulfilment",
+      "Each owner: PostgreSQL + outbox/inbox; Redis is advisory"
+    ],
+    "notes": "The Gateway bounds expensive work. Catalogue and Cart serve shopping; Checkout coordinates a durable reservation and payment intent. Inventory alone writes stock. Payment owns provider calls and reconciliation. Its durable success event causes Inventory to commit sold stock. Only that commitment creates a confirmed order. Kafka decouples failures; local outboxes and inboxes make replay safe. Notification and shipment cannot block the sale. Source: HLD and ADRs001-008. Transition: zoom into the row that protects the last unit."
+  },
+  {
+    "title": "10,000 customers versus 100 units",
+    "seconds": 60,
+    "brief_seconds": 60,
+    "kind": "concurrency",
+    "lines": [
+      "Claim scoped idempotency key and check request hash",
+      "UPDATE stock ... WHERE available >= 1",
+      "Commit stock delta + hold + outbox + original response",
+      "At most100 live holds before releases; expired holds may be reused"
+    ],
+    "notes": "Admitted requests contend on one stock row. The first100 distinct valid transactions can reserve. After the hundredth commit, the guarded condition is false. A waiting writer rechecks it, so stock never goes negative. Duplicates return their stored response. All changes commit together. Expiry and checkout lock the same reservation: expiry can release RESERVED; checkout before expiry changes it to PAYMENT_PENDING. Never expire a payment in flight. The invariant is live held plus sold <=100, not cumulative historical reservations. Source: PostgreSQL transaction isolation documentation and inventory_concurrency.md. Transition: a charge can succeed even when the response is lost."
+  },
+  {
+    "title": "Payment success, then Order failure",
+    "seconds": 45,
+    "brief_seconds": 45,
+    "kind": "recovery",
+    "lines": [
+      "Payment success + outbox commit",
+      "Inventory consumes -> SOLD + ReservationCommitted",
+      "Order down30s: retain the event; show processing",
+      "Restart -> inbox + unique order + outbox -> ACK"
+    ],
+    "notes": "The provider may charge successfully before a process crashes. We persist one intent first, use the same provider key, and look it up after uncertainty. We do not release stock on timeout. After success, the event survives an Order outage. Inventory marks sold and publishes committed purchase evidence. Order restarts, atomically inserts inbox plus its unique reservation order and outgoing event, then acknowledges. A crash after commit just causes a harmless replay. A temporary outage is not a refund trigger. Source: brief p11 and payment/order sequences. Transition: these rules have named interfaces in the LLD."
+  },
+  {
+    "title": "LLD, SOLID and extension points",
+    "seconds": 45,
+    "brief_seconds": 45,
+    "kind": "lld",
+    "lines": [
+      "ReservationService -> InventoryRepository + UnitOfWork",
+      "PaymentService -> PaymentGateway + ReconciliationWorker",
+      "OrderService -> OrderRepository + StatePolicy",
+      "Adapters add providers; strategies add pricing; inbox/outbox isolate effects"
+    ],
+    "notes": "Each service has one responsibility. Core code depends on narrow interfaces. New payment adapters must preserve the timeout and idempotency contract: returning failed for an unknown outcome violates substitution. Pricing strategies extend quote computation; carrier adapters normalize shipment operations. Repository abstractions expose guarded operations rather than unsafe generic CRUD. UnitOfWork keeps stock and outbox atomic. We accept more interface and event coordination in exchange for testable failure boundaries. Source: LLD, SOLID and pattern mapping. Transition: conclude with evidence and the limiting resource."
+  },
+  {
+    "title": "Scale, evidence and the accepted trade-off",
+    "seconds": 30,
+    "brief_seconds": 30,
+    "kind": "evidence",
+    "lines": [
+      "12 / 12 state-model tests passed",
+      "10,000 customers +200 retries ->95 sold,5 released,95 orders",
+      "Hot-product limit: inventory row lock + durable commit",
+      "500k edge RPS is a sizing scenario; PostgreSQL / provider / HA need live validation"
+    ],
+    "notes": "With assumed95% browsing and99% cache hit,500k edge RPS becomes roughly29,750 origin RPS. If all demand is Buy, admission must throttle; adding pods cannot parallelize one hot stock row. Independent SKUs shard. The executed state model passed12 tests including duplicate keys, expiry races, unknown charges, redelivery and Order recovery. It is not a database load test or real failover. Our accepted trade-off is lower availability when authority or payment outcome is uncertain. Team members must ratify this AI-assisted proposal and defend it themselves. Source: simulation_results.json, capacity model and brief p9. Close with the invariant: held plus sold can never exceed allocated stock under the stated assumptions."
+  }
+]

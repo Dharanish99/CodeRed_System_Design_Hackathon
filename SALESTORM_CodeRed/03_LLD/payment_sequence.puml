@@ -1,0 +1,36 @@
+@startuml
+actor Customer as C
+participant "Checkout" as X
+participant "Inventory" as I
+database "Inventory DB" as ID
+participant "Payment" as P
+database "Payment DB" as PD
+participant "Provider" as G
+queue "Kafka / outbox relays" as K
+C -> X : POST /checkouts(reservation)
+X -> I : beginCheckout
+I -> ID : Lock hold; check RESERVED and DB time<TTL
+I -> ID : PAYMENT_PENDING + checkout intent + CheckoutStarted outbox; COMMIT
+I --> X : checkout_id
+C -> P : POST /payments(checkout, token), stable key
+P -> I : Verify trusted pinned checkout snapshot
+P -> PD : Create/get unique payment(reservation), stable provider key; COMMIT
+P -> G : createOrGet SAME intent (no DB lock)
+alt succeeded
+ G --> P : SUCCEEDED + provider_ref
+ P -> PD : success + PaymentSucceeded outbox; COMMIT
+else definitive failed
+ G --> P : FAILED, non-chargeable terminal intent
+ P -> PD : failure + PaymentFailed outbox; COMMIT
+else timeout / lost response
+ P -> PD : UNKNOWN; retain same intent
+ P -> G : Reconciler lookup SAME intent
+ G --> P : definitive outcome or still pending
+end
+PD ->> K : Relay outcome (at least once)
+K ->> I : PaymentSucceeded or PaymentFailed
+I -> ID : inbox + guarded SOLD or RELEASED + outbox; COMMIT
+note over I,ID : PAYMENT_PENDING never expires by TTL.
+note over I,ID : PaymentSucceeded establishes business CONFIRMED; this local commit records durable SOLD.
+note over P,G : Verified webhook and polling converge on same outcome handler.
+@enduml

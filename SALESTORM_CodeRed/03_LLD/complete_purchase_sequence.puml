@@ -1,0 +1,37 @@
+@startuml
+actor Customer
+participant "Gateway / Checkout" as C
+participant "Catalogue / Cart" as A
+participant Inventory as I
+participant Payment as P
+participant "Payment provider" as G
+queue Kafka as K
+participant Order as O
+participant Fulfilment as F
+participant Carrier as S
+participant Notification as N
+Customer -> C : Discover and add cart item
+C -> A : Browse / update cart / quote
+Customer -> C : Buy with stable key
+C -> I : Reserve (guarded transaction)
+I --> Customer : 201 RESERVED (through Gateway)
+C -> I : Begin checkout; pin PAYMENT_PENDING
+C -> P : Start same durable intent
+P -> G : Tokenized charge / lookup
+G --> P : Definitive success
+P ->> K : PaymentSucceeded via local outbox
+K ->> I : PaymentSucceeded
+I ->> K : ReservationCommitted after SOLD commit
+K ->> O : ReservationCommitted (retry during outage)
+O ->> K : OrderConfirmed via local outbox
+K ->> F : OrderConfirmed
+K ->> N : OrderConfirmed
+F -> S : Idempotent shipment creation
+S --> F : Tracking updates
+F ->> K : ShipmentUpdated
+K ->> O : Advance order lifecycle
+K ->> N : Delivery notification
+Customer -> C : GET order / delivery status
+C -> O : Owned order read
+O --> Customer : Tracking status (through Gateway)
+@enduml

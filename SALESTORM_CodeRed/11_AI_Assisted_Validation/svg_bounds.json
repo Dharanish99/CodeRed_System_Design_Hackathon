@@ -1,0 +1,86 @@
+[
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\component_diagram.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\container_diagram.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\deployment_diagram.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\failure_recovery.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\hld_architecture.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\inventory_concurrency.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\payment_order_recovery.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\system_context.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\Visuals\\01_hld.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\Visuals\\02_concurrency.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\Visuals\\03_critical_section.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\Visuals\\04_payment_recovery.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\Visuals\\05_deployment.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\02_HLD\\Visuals\\06_failure_recovery.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\03_LLD\\class_diagram.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\03_LLD\\complete_purchase_sequence.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\03_LLD\\order_reservation_state.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\03_LLD\\order_sequence.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\03_LLD\\payment_sequence.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\03_LLD\\purchase_reservation_sequence.svg",
+    "overflow": []
+  },
+  {
+    "file": "SALESTORM_CodeRed\\04_Database\\erd.svg",
+    "overflow": []
+  }
+]

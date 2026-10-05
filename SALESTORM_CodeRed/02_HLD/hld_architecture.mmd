@@ -1,0 +1,40 @@
+flowchart TB
+ U[Customer] -->|HTTPS| E[CDN and WAF]
+ E -->|Origin HTTPS| L[Load balancer]
+ L --> G[API Gateway - auth and bounded admission]
+ G -->|Sync browse and quote| C[Catalogue and Sale]
+ G -->|Sync| A[Cart]
+ G -->|Sync purchase| X[Checkout facade]
+ G -->|Sync status| O[Order]
+ C <--> R[(Redis advisory cache)]
+ C --> CD[(Catalogue DB)]
+ A --> AD[(Cart DB)]
+ X -->|Sync reserve and begin-checkout| I[Inventory and Reservation]
+ X -->|Sync start same intent| P[Payment]
+ subgraph stock [Inventory consistency boundary]
+ I --> ID[(Inventory DB - holds, dedup, inbox, outbox)]
+ end
+ subgraph pay [Payment idempotency boundary]
+ P --> PD[(Payment DB - intent and outbox)]
+ P -->|HTTPS create or lookup| PG[External payment provider]
+ end
+ ID -.->|Relay CheckoutStarted / ReservationCommitted| K[(Kafka + retry + DLQ)]
+ PD -.->|Relay PaymentSucceeded or Failed| K
+ K -.->|CheckoutStarted| P
+ K -.->|Payment outcome| I
+ subgraph recovery [Order recovery boundary]
+ K -.->|ReservationCommitted| O
+ O --> OD[(Order DB - inbox, order, outbox)]
+ end
+ OD -.->|Relay OrderConfirmed| K
+ K -.-> F[Fulfilment and Shipment]
+ K -.-> N[Notification]
+ F --> FD[(Shipment DB)]
+ N --> ND[(Notification DB)]
+ F -->|HTTPS| SH[External carrier]
+ N -->|HTTPS| NP[External email and SMS]
+ F -.->|ShipmentUpdated via outbox| K
+ G -.->|Telemetry| T[Metrics logs traces]
+ I -.->|Telemetry| T
+ P -.->|Telemetry| T
+ O -.->|Telemetry| T

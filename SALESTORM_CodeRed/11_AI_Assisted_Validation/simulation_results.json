@@ -1,0 +1,28 @@
+{
+  "model": "asyncio transactional state model; global lock abstracts SQL serialization",
+  "not_proven": [
+    "PostgreSQL execution/performance",
+    "real network/process failover",
+    "provider contract",
+    "500000 RPS",
+    "broker durability",
+    "bounded completion under permanent outage"
+  ],
+  "tests_run": 12,
+  "failures": 0,
+  "errors": 0,
+  "practical": {
+    "logical_customers": 10000,
+    "http_attempts": 10200,
+    "duplicate_attempts": 200,
+    "initial_holds": 100,
+    "paid": 95,
+    "failed": 5,
+    "available": 5,
+    "held": 0,
+    "sold": 95,
+    "unique_orders": 95,
+    "max_held_plus_sold": 100,
+    "order_outage_virtual_seconds": 30
+  }
+}

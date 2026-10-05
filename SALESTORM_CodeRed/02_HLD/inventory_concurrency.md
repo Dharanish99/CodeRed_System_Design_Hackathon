@@ -1,0 +1,19 @@
+# 10,000 customers versus 100 units
+1. Edge absorbs browse traffic and rejects bots/over-budget callers (429 + Retry-After). Admission limits protect pool/DB. The stress model admits all distinct attempts eventually to examine the core invariant; it does not promise all 10k are in the database at once.
+2. Gateway passes authenticated customer, stable Idempotency-Key, request hash and correlation ID. A new key cannot bypass the per-customer/sale active purchase constraint.
+3. Inventory begins READ COMMITTED. Claim unique request record. Concurrent same-key insert waits; after winning transaction commits, read its stored response and verify hash. Same key/different body ->409. Transaction rollback leaves no claimed key.
+4. UPDATE inventory SET available_quantity=available_quantity-1,reserved_quantity=reserved_quantity+1 WHERE inventory_id=:id AND available_quantity>=1 RETURNING ... . This row mutation controls contention. No SELECT-then-unconditional-decrement.
+5. In the SAME transaction insert RESERVED row, expires_at=DB clock+120s, immutable quote, audit and InventoryReserved outbox; store original response, COMMIT. Return 201 only after commit. If active-purchase uniqueness fails, rollback stock change, then return existing reservation or conflict.
+6. First 100 distinct valid winners get holds; other 9,900 get OUT_OF_STOCK if all reach the authority before any release (some edge-rejected callers instead see 429). Client timeout is unknown commit, not permission to generate another key; retry/poll same key.
+7. The 100 winners start Checkout. In the practical deterministic example 95 pay, 5 fail. Payment failures release 5; successful intents eventually generate 95 unique confirmed orders after the 30-second Order outage. A later second wave may buy the five released units; total sold still <=100.
+
+## Lifecycle meaning at the authority
+
+The business wording is `AVAILABLE → RESERVED → PAYMENT_PENDING → CONFIRMED → SOLD`. A definitive provider success establishes `CONFIRMED`; Inventory consumes that evidence and, in its one guarded local transaction, records `SOLD`, updates held/sold counters, writes audit evidence and enqueues `ReservationCommitted`. This preserves an explicit business confirmation without creating a distributed or externally visible intermediate stock state. A timeout is not a failure: it remains `PAYMENT_PENDING` until the same provider intent is reconciled. Only a definitive non-chargeable failure or confirmed cancellation releases stock.
+
+## Expiry vs checkout/payment
+Sweeper selects expired RESERVED IDs in batches; each transition locks the reservation, rechecks state and clock_timestamp after obtaining lock, then changes inventory and state together. Checkout takes the same reservation lock and checks DB time. If expiry wins, checkout returns 409 EXPIRED and no payment intent may start. If Checkout wins before TTL, reservation becomes PAYMENT_PENDING with a durable checkout token and is ineligible for TTL release. A late payment response is safe because held stock was never released.
+The checkout command outbox/reconciliation repairs a crash after marking PAYMENT_PENDING but before Payment receives the request. Delayed duplicate start commands resolve the same intent. Cancellation becomes definitive only when that provider intent is terminal and non-chargeable; otherwise retain stock and escalate. Never unlock based on wall-clock timeout alone.
+
+## Transaction failures and workers
+No external calls inside stock transaction. Deadlock/serialization rollback: bounded same-key retry with jitter. DB disconnection at COMMIT: resolve key on authoritative writer; 503/unknown until available. Sweeper crash: transaction rollback or already committed RELEASED; repeated processing is no-op. Event inbox is in same transaction as state/quantities. Late PaymentFailed cannot reverse SOLD; conflicting provider terminal events are quarantined and looked up, not last-write-wins.

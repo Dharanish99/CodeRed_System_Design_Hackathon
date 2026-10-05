@@ -1,0 +1,97 @@
+erDiagram
+  identity_customer {
+    uuid customer_id PK
+  }
+  catalog_category {
+    uuid category_id PK
+  }
+  catalog_product {
+    uuid product_id PK
+    uuid category_id
+  }
+  catalog_sale {
+    uuid sale_id PK
+    text status
+  }
+  catalog_deal {
+    uuid deal_id PK
+    uuid sale_id
+    uuid product_id
+  }
+  catalog_coupon {
+    uuid coupon_id PK
+    uuid sale_id
+    timestamptz expires_at
+  }
+  cart_cart {
+    uuid cart_id PK
+    uuid customer_id
+  }
+  cart_cart_item {
+    uuid cart_item_id PK
+    uuid cart_id
+    uuid product_id
+  }
+  inventory_inventory {
+    uuid inventory_id PK
+    uuid sale_id
+    uuid product_id
+    integer available_quantity
+    integer reserved_quantity
+    integer sold_quantity
+  }
+  inventory_inventory_reservation {
+    uuid reservation_id PK
+    uuid inventory_id
+    uuid sale_id
+    uuid customer_id
+    text status
+    timestamptz expires_at
+    uuid checkout_id
+    uuid payment_id
+  }
+  payment_payment {
+    uuid payment_id PK
+    uuid reservation_id
+    uuid checkout_id
+    uuid customer_id
+    text status
+  }
+  orders_customer_order {
+    uuid order_id PK
+    uuid reservation_id
+    uuid customer_id
+    uuid payment_id
+    text status
+  }
+  orders_order_item {
+    uuid order_item_id PK
+    uuid order_id
+    uuid product_id
+  }
+  fulfilment_shipment {
+    uuid shipment_id PK
+    uuid order_id
+    text status
+  }
+  notification_notification {
+    uuid notification_id PK
+    uuid event_id
+    uuid order_id
+    text status
+  }
+  catalog_category ||--o{ catalog_product : classifies
+  catalog_sale ||--o{ catalog_deal : offers
+  catalog_product ||--o{ catalog_deal : prices
+  catalog_sale ||--o{ catalog_coupon : promotes
+  cart_cart ||--o{ cart_cart_item : contains
+  inventory_inventory ||--o{ inventory_inventory_reservation : holds
+  orders_customer_order ||--o{ orders_order_item : contains
+  identity_customer ||--o{ cart_cart : owns_logical
+  catalog_product ||--o{ inventory_inventory : stock_logical
+  catalog_sale ||--o{ inventory_inventory : allocation_logical
+  identity_customer ||--o{ inventory_inventory_reservation : buyer_logical
+  inventory_inventory_reservation ||--o{ payment_payment : intent_logical
+  inventory_inventory_reservation ||--o{ orders_customer_order : order_logical
+  orders_customer_order ||--o{ fulfilment_shipment : shipment_logical
+  orders_customer_order ||--o{ notification_notification : notice_logical

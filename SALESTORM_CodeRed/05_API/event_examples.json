@@ -1,0 +1,21 @@
+[
+  {
+    "event_id": "10000000-0000-0000-0000-000000000001",
+    "event_type": "PaymentSucceeded",
+    "schema_version": 1,
+    "aggregate_id": "20000000-0000-0000-0000-000000000001",
+    "aggregate_version": 2,
+    "occurred_at": "2026-10-05T04:00:00Z",
+    "correlation_id": "30000000-0000-0000-0000-000000000001",
+    "traceparent": "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+    "data": {
+      "payment_id": "20000000-0000-0000-0000-000000000001",
+      "checkout_id": "40000000-0000-0000-0000-000000000001",
+      "reservation_id": "50000000-0000-0000-0000-000000000001",
+      "provider": "example",
+      "provider_ref": "intent_example",
+      "amount_minor": 99900,
+      "currency": "INR"
+    }
+  }
+]

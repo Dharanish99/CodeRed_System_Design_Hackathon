@@ -1,0 +1,25 @@
+@startuml
+participant "Inventory" as I
+database "Inventory DB" as ID
+queue "Kafka" as K
+participant "Order (down30s)" as O
+database "Order DB" as D
+participant "Fulfilment / Notification" as F
+I -> ID : Payment success confirms business purchase -> durable SOLD + ReservationCommitted outbox
+ID ->> K : Relay ReservationCommitted
+... Order unavailable for30 seconds; event retained ...
+K ->> O : Deliver after restart
+O -> D : BEGIN; insert inbox(consumer,event_id)
+alt already processed
+ D --> O : Duplicate: no mutation
+else new delivery
+ O -> D : Insert UNIQUE order(reservation_id) + line snapshot
+ O -> D : Audit CREATED -> PAYMENT_PENDING -> CONFIRMED
+ O -> D : Insert OrderConfirmed outbox
+end
+O -> D : COMMIT
+O -> K : ACK after commit
+note over O,D : Order follows durable SOLD evidence; crash before ACK replays safely via inbox AND business uniqueness.
+D ->> K : Relay OrderConfirmed
+K ->> F : Create shipment / notify idempotently
+@enduml

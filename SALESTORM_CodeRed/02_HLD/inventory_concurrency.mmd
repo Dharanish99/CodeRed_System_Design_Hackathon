@@ -1,0 +1,10 @@
+flowchart LR
+ A[10000 distinct Buy actions] -->|Authenticated / rate limited| B[Bounded admission]
+ B -->|Same stable key| C[Claim request key]
+ C -->|Existing key and same hash| D[Replay stored response]
+ C -->|New key| E[SQL UPDATE where available >= 1]
+ E -->|One row changed| F[Hold + outbox + response COMMIT]
+ E -->|Zero changed| G[OUT_OF_STOCK]
+ F --> H[At most100 live holds before releases]
+ H --> I[Payment success: held -> sold]
+ H --> J[Terminal failure: held -> available]

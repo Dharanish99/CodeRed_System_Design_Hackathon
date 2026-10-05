@@ -1,0 +1,10 @@
+flowchart LR
+ A[Provider charge succeeded] --> B[Payment DB: success + outbox]
+ B -.->|Relay; retries may duplicate| C[Kafka PaymentSucceeded]
+ C -.-> D[Inventory inbox + SOLD + outbox]
+ D -.-> E[Kafka ReservationCommitted]
+ E -.-> F[Order unavailable30 seconds]
+ F -->|Restart and replay| G[Inbox + unique order + OrderConfirmed]
+ G --> H[Customer sees confirmed]
+ A -->|Local response lost| R[Reconciler looks up SAME provider intent]
+ R --> B

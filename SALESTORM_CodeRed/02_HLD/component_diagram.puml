@@ -1,0 +1,24 @@
+@startuml
+!pragma layout smetana
+skinparam componentStyle rectangle
+package "Inventory" {
+ [InventoryController] --> [ReservationService]
+ [ExpiryWorker] --> [ReservationService]
+ [ReservationService] --> [InventoryRepository]
+ [ReservationService] --> [IdempotencyRepository]
+ [ReservationService] --> [UnitOfWork + Outbox]
+}
+package "Payment" {
+ [PaymentController] --> [PaymentService]
+ [ReconciliationWorker] --> [PaymentService]
+ [PaymentService] --> [PaymentRepository]
+ [PaymentService] --> [PaymentGateway interface]
+ [PaymentGateway interface] <|.. [ProviderAdapter]
+}
+package "Order" {
+ [OrderConsumer] --> [OrderService]
+ [OrderService] --> [OrderRepository]
+ [OrderService] --> [OrderStatePolicy]
+ [OrderService] --> [Inbox + Outbox + UnitOfWork]
+}
+@enduml

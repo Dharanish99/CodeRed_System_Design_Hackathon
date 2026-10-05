@@ -1,0 +1,11 @@
+flowchart TB
+ A[Failure detected] --> B{Where?}
+ B -->|Inventory DB| C[Fail closed; same-key retry after fenced recovery]
+ B -->|Gateway timeout| D[UNKNOWN payment; retain stock; lookup intent]
+ B -->|Broker unavailable| E[Retain local outbox; throttle backlog]
+ B -->|Order unavailable| F[Retain committed event; replay]
+ B -->|Poison event| G[DLQ + alert + repair + same-ID replay]
+ D --> H{Definitive outcome?}
+ H -->|Success| I[SOLD then order]
+ H -->|Non-chargeable failure| J[Release hold once]
+ H -->|Unknown| K[Keep hold; escalate15m]

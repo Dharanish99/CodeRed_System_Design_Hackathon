@@ -1,0 +1,2 @@
+# Critical components
+InventoryController validates identities/DTOs; ReservationService coordinates InventoryRepository, IdempotencyRepository and Outbox in one UnitOfWork. ExpiryWorker invokes the same guarded transition API. PaymentService depends on PaymentRepository and narrow PaymentGateway; ReconciliationWorker uses provider lookup. OrderConsumer uses Inbox, OrderRepository, StatePolicy and Outbox atomically. See component_diagram.puml and the LLD class diagram.

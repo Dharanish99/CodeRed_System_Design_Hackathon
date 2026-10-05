@@ -1,0 +1,41 @@
+@startuml
+!pragma layout smetana
+node "Global edge" {
+ [CDN + WAF]
+}
+node "Active region - private application subnets" {
+ [Load balancer / Gateway]
+ node "AZ A" {
+ [Stateless API replicas A]
+}
+ node "AZ B" {
+ [Stateless API replicas B]
+}
+ node "AZ C" {
+ [Workers / API replicas C]
+}
+ [Bounded connection pool]
+}
+node "Private data subnets" {
+ database "Owner-local PostgreSQL writers\nFenced primary per shard" as PG
+ database "Synchronous standby\nDifferent AZ" as ST
+ queue "Kafka\n3 replicas\n retry + DLQ" as K
+ database "Redis cache\nNot stock authority" as R
+}
+cloud "External payment / carrier / messaging" as EX
+node "Operations" {
+ [Metrics logs traces]
+ [Secret manager]
+}
+[CDN + WAF] --> [Load balancer / Gateway] : HTTPS
+[Load balancer / Gateway] --> [Stateless API replicas A]
+[Load balancer / Gateway] --> [Stateless API replicas B]
+[Stateless API replicas A] --> [Bounded connection pool]
+[Stateless API replicas B] --> [Bounded connection pool]
+[Workers / API replicas C] --> [Bounded connection pool]
+[Bounded connection pool] --> PG : TLS
+PG --> ST : sync WAL
+[Workers / API replicas C] --> K
+[Stateless API replicas A] --> R
+[Stateless API replicas B] --> EX : TLS + allowlisted egress
+@enduml
